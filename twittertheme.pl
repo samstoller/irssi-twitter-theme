@@ -17,13 +17,26 @@
 # Can be configured to remove URLs that:
 # * Appear inside brackets <...>
 #
+# CHANGELOG
+#
+# v0.2a
+#  - Signals
+#     * Added signal for own public
+#     * Changed all signals to fire last
+#     * Factored out signals / colorize routines
+#  - Regex
+#     * Modified <...> to be more greedy
+#  - Features
+#     * Added channel validation setting
+#
+#
 use strict;
 use warnings;
 use vars qw($VERSION %IRSSI);
 use Irssi;
 
 #use Data::Dumper;
-#$Data::Dumper::Indent = 1;
+#$Data::Dumper::Indent = 2;
 
 $VERSION = ".1";
 %IRSSI = (
@@ -36,14 +49,14 @@ $VERSION = ".1";
 	changed     => "2014-03-01"
 );
 
-
-sub sig_public {
-	my ($server, $msg, $nick, $address, $target) = @_;	
-	#return if (!$server->ischannel(Irssi::settings_get_str('test_channel')));
-	#return if ($target != Irssi::settings_get_str('test_channel'));	
+sub twt_colorize {
+	my ($msg, $target) = @_;	
 	my $new_str = '';
 
-	# remove formatting and colors (has to be done, sorry!)
+	# Validate current channel
+	return $msg if (!is_enabled_chan($target));
+
+	# Remove formatting and colors (too messy otherwise)
 	$msg =~ s/\x03\d?\d?(,\d?\d?)?|\x02|\x1f|\x16|\x06|\x07//g;
 
 	# Tokenize msg string, iterate over components
@@ -71,7 +84,7 @@ sub sig_public {
 			$new_str .= chr(3).'14'.$_; # dark gray
 
 		# URLs in <>
-		} elsif (/<[\w#~\.\/\-]+>/) {
+		} elsif (/<\S+\.\S+>/) {
 			#$new_str .= 'embedurl ';
 		
 		# All other text
@@ -81,10 +94,43 @@ sub sig_public {
 		$new_str .= ' ';
 	}
 
-	#Irssi::print($new_str, MSGLEVEL_CLIENTCRAP);	
-	
-	# Keep the signal going
-	Irssi::signal_continue($server, $new_str, $nick, $address, $target);
+	return $new_str;
 }
-Irssi::signal_add('message public', 'sig_public');
-Irssi::settings_add_str($IRSSI{'name'}, 'test_channel', '#twitter_');
+
+sub sig_public {
+        my ($server, $msg, $nick, $address, $target) = @_;
+	
+	$msg = twt_colorize($msg, $target);
+	
+	Irssi::signal_continue($server, $msg, $nick, $address, $target);
+}
+
+sub sig_own_public {
+	my ($server, $msg, $target) = @_;
+
+	$msg = twt_colorize($msg, $target);
+	
+	Irssi::signal_continue($server, $msg, $target);
+}
+
+sub is_enabled_chan {
+	my ($target) = @_;
+	my $enabled = 0;
+	
+	# Setting - 'all'	
+	return 1 if (Irssi::settings_get_str('twt_channels') eq 'all');
+
+	# Setting - '#channel' must match one in list
+	foreach my $chan (split(/ /, Irssi::settings_get_str('twt_channels'))) {
+		if (lc($chan) eq lc($target)) {
+			$enabled = 1;
+			last;  # break
+		}
+	}
+
+	return $enabled;
+}
+
+Irssi::signal_add_last('message public', 'sig_public');
+Irssi::signal_add_last('message own_public', 'sig_own_public');
+Irssi::settings_add_str($IRSSI{'name'}, 'twt_channels', 'all');
