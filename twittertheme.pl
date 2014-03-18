@@ -131,6 +131,14 @@ sub is_enabled_chan {
 	return $enabled;
 }
 
+# Bind subroutines to signals
 Irssi::signal_add_last('message public', 'sig_public');
 Irssi::signal_add_last('message own_public', 'sig_own_public');
+
+# /SET
 Irssi::settings_add_str($IRSSI{'name'}, 'twt_channels', 'all');
+Irssi::settings_add_str($IRSSI{'name'}, 'twt_color_hash', 'yellow');
+Irssi::settings_add_str($IRSSI{'name'}, 'twt_color_user', 'magenta');
+Irssi::settings_add_str($IRSSI{'name'}, 'twt_color_http', 'gray');
+Irssi::settings_add_str($IRSSI{'name'}, 'twt_color_text', 'white');
+Irssi::settings_add_bool($IRSSI{'name'}, 'twt_remove_long_urls', 1);
