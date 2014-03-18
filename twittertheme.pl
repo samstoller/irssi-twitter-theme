@@ -19,6 +19,11 @@
 #
 # CHANGELOG
 #
+# v0.3a
+#  - Settings
+#     * Added settings for colors
+#     * Added setting to toggle long url removal
+#
 # v0.2a
 #  - Signals
 #     * Added signal for own public
@@ -43,7 +48,7 @@ $VERSION = ".1";
 	authors	    => "Sam Stoller",
 	contact     => "snstoller\@gmail.com",
 	name	    => "Twitter Color",
-	description => "Assign colors to tweet components",
+	description => "Assign colors to tweet message components",
 	license	    => "Public Domain",
 	url	    => "http://irssi.org/",
 	changed     => "2014-03-01"
