@@ -23,7 +23,6 @@
 #  - Settings
 #     * Added settings for colors
 #     * Added setting to toggle long url removal
-#
 # v0.2a
 #  - Signals
 #     * Added signal for own public
@@ -47,7 +46,7 @@ $VERSION = ".1";
 %IRSSI = (
 	authors	    => "Sam Stoller",
 	contact     => "snstoller\@gmail.com",
-	name	    => "Twitter Color",
+	name	    => "Twitter Theme",
 	description => "Assign colors to tweet message components",
 	license	    => "Public Domain",
 	url	    => "http://irssi.org/",
@@ -102,6 +101,20 @@ sub twt_colorize {
 	return $new_str;
 }
 
+
+#######################
+# Command subroutines #
+#######################
+
+sub cmd_help {
+
+}
+
+
+######################
+# Signal subroutines #
+######################
+
 sub sig_public {
         my ($server, $msg, $nick, $address, $target) = @_;
 	
@@ -116,6 +129,28 @@ sub sig_own_public {
 	$msg = twt_colorize($msg, $target);
 	
 	Irssi::signal_continue($server, $msg, $target);
+}
+
+sub sig_setup_changed {
+
+	return if (is_all_chan());
+
+	my $server = Irssi::active_server();
+	foreach my $chan (split(/\s+/, Irssi::settings_get_str('twt_channels'))) {
+		if (!$server->ischannel($chan)) {
+			Irssi::print($chan.' is not a valid channel name.\n');
+		}
+	}
+}
+
+
+######################
+# Helper subroutines #
+######################
+
+sub is_all_chan {
+	return 1 if (Irssi::settings_get_str('twt_channels') eq lc('all'));
+	return 0;
 }
 
 sub is_enabled_chan {
@@ -136,14 +171,27 @@ sub is_enabled_chan {
 	return $enabled;
 }
 
-# Bind subroutines to signals
+
+################
+# Main routine #
+################
+
+# Bind (to commands)
+Irssi::command_bind('twt', \&cmd_help, 'Twitter Theme');
+Irssi::command_bind('twt help', \&cmd_help);
+Irssi::command_bind('help twt', \&cmd_help);
+
+# Bind (to signals)
 Irssi::signal_add_last('message public', 'sig_public');
 Irssi::signal_add_last('message own_public', 'sig_own_public');
+Irssi::signal_add_last('setup changed', 'sig_setup_changed');
 
-# /SET
+# Settings w/ defaults (/set)
 Irssi::settings_add_str($IRSSI{'name'}, 'twt_channels', 'all');
+Irssi::settings_add_str($IRSSI{'name'}, 'twt_color_bitlbee', 'lgray');
 Irssi::settings_add_str($IRSSI{'name'}, 'twt_color_hash', 'yellow');
-Irssi::settings_add_str($IRSSI{'name'}, 'twt_color_user', 'magenta');
 Irssi::settings_add_str($IRSSI{'name'}, 'twt_color_http', 'gray');
+Irssi::settings_add_str($IRSSI{'name'}, 'twt_color_retweet', 'green');
 Irssi::settings_add_str($IRSSI{'name'}, 'twt_color_text', 'white');
-Irssi::settings_add_bool($IRSSI{'name'}, 'twt_remove_long_urls', 1);
+Irssi::settings_add_str($IRSSI{'name'}, 'twt_color_user', 'magenta');
+Irssi::settings_add_bool($IRSSI{'name'}, 'twt_remove_long_urls', 1);  # ON
