@@ -155,13 +155,12 @@ sub is_all_chan {
 
 sub is_enabled_chan {
 	my ($target) = @_;
-	my $enabled = 0;
-	
-	# Setting - 'all'	
-	return 1 if (Irssi::settings_get_str('twt_channels') eq 'all');
+	my $enabled = 0; 
 
-	# Setting - '#channel' must match one in list
-	foreach my $chan (split(/ /, Irssi::settings_get_str('twt_channels'))) {
+	return 1 if (is_all_chan());
+
+	# Channel must match one in settings
+	foreach my $chan (split(/\s+/, Irssi::settings_get_str('twt_channels'))) {
 		if (lc($chan) eq lc($target)) {
 			$enabled = 1;
 			last;  # break
@@ -195,3 +194,4 @@ Irssi::settings_add_str($IRSSI{'name'}, 'twt_color_retweet', 'green');
 Irssi::settings_add_str($IRSSI{'name'}, 'twt_color_text', 'white');
 Irssi::settings_add_str($IRSSI{'name'}, 'twt_color_user', 'magenta');
 Irssi::settings_add_bool($IRSSI{'name'}, 'twt_remove_long_urls', 1);  # ON
+
