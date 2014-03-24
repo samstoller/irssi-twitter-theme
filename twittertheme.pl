@@ -39,8 +39,8 @@ use warnings;
 use vars qw($VERSION %IRSSI);
 use Irssi;
 
-#use Data::Dumper;
-#$Data::Dumper::Indent = 2;
+use Data::Dumper;
+$Data::Dumper::Indent = 2;
 
 $VERSION = ".1";
 %IRSSI = (
@@ -57,10 +57,10 @@ sub twt_colorize {
 	my ($msg, $target) = @_;	
 	my $new_str = '';
 
-	# Validate current channel
+	# Is this channel set to colorize?
 	return $msg if (!is_enabled_chan($target));
 
-	# Remove formatting and colors (too messy otherwise)
+	# Remove colors, formatting (too messy otherwise)
 	$msg =~ s/\x03\d?\d?(,\d?\d?)?|\x02|\x1f|\x16|\x06|\x07//g;
 
 	# Tokenize msg string, iterate over components
@@ -133,14 +133,28 @@ sub sig_own_public {
 
 sub sig_setup_changed {
 
-	return if (is_all_chan());
+	my $setting = '';
+	my $server  = Irssi::active_server();
+	my $old     = get_channels();
 
-	my $server = Irssi::active_server();
-	foreach my $chan (split(/\s+/, Irssi::settings_get_str('twt_channels'))) {
-		if (!$server->ischannel($chan)) {
-			Irssi::print($chan.' is not a valid channel name.\n');
+	if ($old !~ m/\ball\b/i) {
+		
+		# Valid channels are saved while invalid are discarded
+		foreach my $chan ($old =~ /(\S+)/g) {
+			if ($server->ischannel($chan)) {
+				$setting .= $chan.' ';
+			} else {
+				Irssi::print("'".$chan."' is not a valid channel name.\n");
+			}
 		}
 	}
+
+	# Default Setting - All Channels
+	# $setting is empty b/c nothing valid was set OR
+	# the word 'all' was detected in setting string above
+	if ($setting eq '') { $setting = 'all'; }
+
+	Irssi::settings_set_str('twt_channels', $setting);
 }
 
 
@@ -148,8 +162,12 @@ sub sig_setup_changed {
 # Helper subroutines #
 ######################
 
+sub get_channels {
+	return Irssi::settings_get_str('twt_channels');
+}
+
 sub is_all_chan {
-	return 1 if (Irssi::settings_get_str('twt_channels') eq lc('all'));
+	return 1 if (get_channels() eq 'all');
 	return 0;
 }
 
@@ -160,7 +178,7 @@ sub is_enabled_chan {
 	return 1 if (is_all_chan());
 
 	# Channel must match one in settings
-	foreach my $chan (split(/\s+/, Irssi::settings_get_str('twt_channels'))) {
+	foreach my $chan (split(/\S+/, get_channels())) {
 		if (lc($chan) eq lc($target)) {
 			$enabled = 1;
 			last;  # break
