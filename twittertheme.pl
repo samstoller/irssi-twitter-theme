@@ -72,7 +72,7 @@ sub twt_colorize {
 			$new_str .= chr(3).'15'.$_; # gray
 		
 		# Retweets, eg: RT @usertag:
-		} elsif (/RT/) {
+		} elsif (/\bRT\b/) {
 			$new_str .= chr(3).'03'.$_; # green
 
 		# @usertags
