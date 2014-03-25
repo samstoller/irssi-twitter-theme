@@ -1,7 +1,5 @@
 #!/usr/bin/perl -w
 #
-################################################################################
-#
 # twittertheme.pl
 #
 # Colorizes Twitter channel components (configured for Bitlbee-style). 
@@ -26,9 +24,12 @@
 #  - Commands
 #     * Implemented help command
 #  - Settings
+#     * Added COLORS hash mapping
 #     * Implemented color settings
+#     * Validated color settings
 #  - Functionality
 #     * Refactored colorize function
+#     * Added more helpers and organized layout
 # v0.3a
 #  - Settings
 #     * Added settings for colors
@@ -47,23 +48,41 @@
 
 use strict;
 use warnings;
-use vars qw($VERSION %IRSSI);
+use vars qw($VERSION %IRSSI %COLORS);
 use Irssi;
 
-use Data::Dumper;
-$Data::Dumper::Indent = 2;
+#use Data::Dumper;
+#$Data::Dumper::Indent = 2;
 
 ################################################################################
 
-$VERSION = ".1";
+$VERSION = "0.4";
 %IRSSI = (
 	authors	    => "Sam Stoller",
 	contact     => "snstoller\@gmail.com",
 	name	    => "Twitter Theme",
 	description => "Assign colors to tweet message components",
 	license	    => "Public Domain",
-	url	    => "http://irssi.org/",
+	url	        => "http://irssi.org/",
 	changed     => "2014-03-01"
+);
+%COLORS = (
+	white    => 0,
+	black    => 1,
+	blue     => 2,
+	green    => 3,
+	lred     => 4,
+	red      => 5,
+	magenta  => 6,
+	yellow   => 7,
+	lyellow  => 8,
+	lgreen   => 9,
+	cyan     => 10,
+	lcyan    => 11,
+	lblue    => 12,
+	lmagenta => 13,
+	gray     => 14,
+	lgray    => 15
 );
 
 #######################
@@ -165,46 +184,28 @@ EOF
 # Signal subroutines #
 ######################
 
+# Colorizes user public messages
 sub sig_public {
-        my ($server, $msg, $nick, $address, $target) = @_;
+    my ($server, $msg, $nick, $address, $target) = @_;
 	
-	$msg = do_colorize($msg, $target);
+	$msg = colorize($msg, $target);
 	
 	Irssi::signal_continue($server, $msg, $nick, $address, $target);
 }
 
+# Colorizes your public messages
 sub sig_own_public {
 	my ($server, $msg, $target) = @_;
 
-	$msg = do_colorize($msg, $target);
+	$msg = colorize($msg, $target);
 	
 	Irssi::signal_continue($server, $msg, $target);
 }
 
+# Validates channel and color settings
 sub sig_setup_changed {
-
-	my $setting = '';
-	my $server  = Irssi::active_server();
-	my $old     = get_channels();
-
-	if ($old !~ m/\ball\b/i) {
-		
-		# Valid channels are saved while invalid are discarded
-		foreach my $chan ($old =~ /(\S+)/g) {
-			if ($server->ischannel($chan)) {
-				$setting .= $chan.' ';
-			} else {
-				Irssi::print("'".$chan."' is not a valid channel name.\n");
-			}
-		}
-	}
-
-	# Default Setting - All Channels
-	# $setting is empty b/c nothing valid was set OR
-	# the word 'all' was detected in setting string above
-	if ($setting eq '') { $setting = 'all'; }
-
-	Irssi::settings_set_str('twt_channels', $setting);
+	validate_channels();
+	validate_colors();
 }
 
 
@@ -212,56 +213,81 @@ sub sig_setup_changed {
 # Helper subroutines #
 ######################
 
-sub do_colorize {
+sub colorize {
 	my ($msg, $target) = @_;	
-	my $new_str = '';
+	my $pretty_msg = '';
 
-	# Is this channel set to colorize?
+	# Is this channel set to be colorized?
 	return $msg if (!is_enabled_chan($target));
 
-	# Remove colors, formatting (too messy otherwise)
+	# Remove colors and some formatting (too messy otherwise)
 	$msg =~ s/\x03\d?\d?(,\d?\d?)?|\x02|\x1f|\x16|\x06|\x07//g;
 
-	# Tokenize msg string, iterate over components
+	# Tokenize message string
 	my @words = $msg =~ /(\S+)/g;	
-	foreach (@words) {
-		
-		# Bitlbee-style Tweet #'s, eg: [f9], [04]->[ca]
-		if (/\[[0-9A-Za-z]{2}(\->[0-9A-Za-z]{2})?\]/) {
-			$new_str .= chr(3).'15'.$_; # gray
-		
-		# Retweets, eg: RT @usertag:
-		} elsif (/\bRT\b/) {
-			$new_str .= chr(3).'03'.$_; # green
+	foreach my $word (@words) {
 
-		# @usertags
-		} elsif (/^@.+/) {
-			$new_str .= chr(3).'06'.$_; # magenta
-		
-		# #hashtags
-		} elsif (/^#.+/) {
-			$new_str .= chr(3).'07'.$_; # orange
+		# Skip long URLs if setting enabled
+		if (not (has_remove_long_URLs() and is_long_URL($word))) {
 
-		# http URLs
-		} elsif (/^https?:\/\//) {
-			$new_str .= chr(3).'14'.$_; # dark gray
+			# Echo color
+			$pretty_msg .= get_component_color(detect_component($word));
 
-		# URLs in <>
-		} elsif (/<\S+\.\S+>/) {
-			#$new_str .= 'embedurl ';
-		
-		# All other text
-		} else {
-			$new_str .= chr(3).'00'.$_; # white
+			# Echo component
+			$pretty_msg .= $word.' ';  # TODO/FIXME whitespace
 		}
-		$new_str .= ' ';
 	}
 
-	return $new_str;
+	return $pretty_msg;
+}
+
+sub detect_component {
+	my ($word)    = @_;
+	my $component = 'text';
+
+	# Bitlbee-style Tweet #'s, eg: [f9], [04]->[ca]
+	if ($word =~ /\[[0-9A-Za-z]{2}(\->[0-9A-Za-z]{2})?\]/) {
+		$component = 'bitlbee';
+	
+	} elsif ($word =~ /\bRT\b/) {
+		$component = 'retweet';
+
+	} elsif ($word =~ /^@.+/) {
+		$component = 'user';
+
+	} elsif ($word =~ /^#.+/) {
+		$component = 'hash';
+
+	} elsif ($word =~ /^https?:\/\//) {
+		$component = 'http';
+	}
+
+	return $component;
+}
+
+sub is_long_URL {
+	return 1 if (/<\S+\.\S+>/);
+	return 0;
+}
+
+
+#######################
+# Setting subroutines #
+#######################
+
+sub get_component_color {
+	my $color = Irssi::settings_get_str('twt_color_'.$_[0]);
+	return chr(3).sprintf('%02d', $COLORS{$color}); 
 }
 
 sub get_channels {
+
 	return Irssi::settings_get_str('twt_channels');
+}
+
+sub has_remove_long_URLs {
+
+	return Irssi::settings_get_str('twt_remove_long_urls');
 }
 
 sub is_all_chan {
@@ -284,6 +310,47 @@ sub is_enabled_chan {
 	}
 
 	return $enabled;
+}
+
+sub validate_channels {
+	my $setting = '';
+	my $server  = Irssi::active_server();
+	my $old     = get_channels();
+
+	if ($old !~ m/\ball\b/i) {
+		
+		# Valid channels are saved while invalid are discarded
+		foreach my $chan ($old =~ /(\S+)/g) {
+			if ($server->ischannel($chan)) {
+				$setting .= $chan.' ';
+			} else {
+				Irssi::print("'".$chan."' is not a valid channel name.");
+			}
+		}
+	}
+
+	# Default Setting - All Channels
+	# $setting is empty b/c nothing valid was set OR
+	# the word 'all' was detected in setting string above
+	if ($setting eq '') { $setting = 'all'; }
+
+	Irssi::settings_set_str('twt_channels', $setting);
+}
+
+sub validate_colors {
+	my $color = '';
+
+	foreach my $component qw(bitlbee hash http retweet text user) {
+
+		$color = lc(Irssi::settings_get_str('twt_color_'.$component));
+		if (exists $COLORS{$color}) {
+			Irssi::settings_set_str('twt_color_'.$component, $color);
+		} else {
+			Irssi::settings_set_str('twt_color_'.$component, 'lgray');
+			Irssi::print("'".$color."' is not a valid color.\nType '/twt colors' to see a list.");
+		}
+
+	}
 }
 
 
@@ -310,4 +377,3 @@ Irssi::settings_add_str($IRSSI{'name'}, 'twt_color_retweet', 'green');
 Irssi::settings_add_str($IRSSI{'name'}, 'twt_color_text', 'white');
 Irssi::settings_add_str($IRSSI{'name'}, 'twt_color_user', 'magenta');
 Irssi::settings_add_bool($IRSSI{'name'}, 'twt_remove_long_urls', 1);  # ON
-
