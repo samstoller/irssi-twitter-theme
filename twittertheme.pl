@@ -66,55 +66,6 @@ $VERSION = ".1";
 	changed     => "2014-03-01"
 );
 
-sub twt_colorize {
-	my ($msg, $target) = @_;	
-	my $new_str = '';
-
-	# Is this channel set to colorize?
-	return $msg if (!is_enabled_chan($target));
-
-	# Remove colors, formatting (too messy otherwise)
-	$msg =~ s/\x03\d?\d?(,\d?\d?)?|\x02|\x1f|\x16|\x06|\x07//g;
-
-	# Tokenize msg string, iterate over components
-	my @words = $msg =~ /(\S+)/g;	
-	foreach (@words) {
-		
-		# Bitlbee-style Tweet #'s, eg: [f9], [04]->[ca]
-		if (/\[[0-9A-Za-z]{2}(\->[0-9A-Za-z]{2})?\]/) {
-			$new_str .= chr(3).'15'.$_; # gray
-		
-		# Retweets, eg: RT @usertag:
-		} elsif (/\bRT\b/) {
-			$new_str .= chr(3).'03'.$_; # green
-
-		# @usertags
-		} elsif (/^@.+/) {
-			$new_str .= chr(3).'06'.$_; # magenta
-		
-		# #hashtags
-		} elsif (/^#.+/) {
-			$new_str .= chr(3).'07'.$_; # orange
-
-		# http URLs
-		} elsif (/^https?:\/\//) {
-			$new_str .= chr(3).'14'.$_; # dark gray
-
-		# URLs in <>
-		} elsif (/<\S+\.\S+>/) {
-			#$new_str .= 'embedurl ';
-		
-		# All other text
-		} else {
-			$new_str .= chr(3).'00'.$_; # white
-		}
-		$new_str .= ' ';
-	}
-
-	return $new_str;
-}
-
-
 #######################
 # Command subroutines #
 #######################
@@ -217,7 +168,7 @@ EOF
 sub sig_public {
         my ($server, $msg, $nick, $address, $target) = @_;
 	
-	$msg = twt_colorize($msg, $target);
+	$msg = do_colorize($msg, $target);
 	
 	Irssi::signal_continue($server, $msg, $nick, $address, $target);
 }
@@ -225,7 +176,7 @@ sub sig_public {
 sub sig_own_public {
 	my ($server, $msg, $target) = @_;
 
-	$msg = twt_colorize($msg, $target);
+	$msg = do_colorize($msg, $target);
 	
 	Irssi::signal_continue($server, $msg, $target);
 }
@@ -260,6 +211,54 @@ sub sig_setup_changed {
 ######################
 # Helper subroutines #
 ######################
+
+sub do_colorize {
+	my ($msg, $target) = @_;	
+	my $new_str = '';
+
+	# Is this channel set to colorize?
+	return $msg if (!is_enabled_chan($target));
+
+	# Remove colors, formatting (too messy otherwise)
+	$msg =~ s/\x03\d?\d?(,\d?\d?)?|\x02|\x1f|\x16|\x06|\x07//g;
+
+	# Tokenize msg string, iterate over components
+	my @words = $msg =~ /(\S+)/g;	
+	foreach (@words) {
+		
+		# Bitlbee-style Tweet #'s, eg: [f9], [04]->[ca]
+		if (/\[[0-9A-Za-z]{2}(\->[0-9A-Za-z]{2})?\]/) {
+			$new_str .= chr(3).'15'.$_; # gray
+		
+		# Retweets, eg: RT @usertag:
+		} elsif (/\bRT\b/) {
+			$new_str .= chr(3).'03'.$_; # green
+
+		# @usertags
+		} elsif (/^@.+/) {
+			$new_str .= chr(3).'06'.$_; # magenta
+		
+		# #hashtags
+		} elsif (/^#.+/) {
+			$new_str .= chr(3).'07'.$_; # orange
+
+		# http URLs
+		} elsif (/^https?:\/\//) {
+			$new_str .= chr(3).'14'.$_; # dark gray
+
+		# URLs in <>
+		} elsif (/<\S+\.\S+>/) {
+			#$new_str .= 'embedurl ';
+		
+		# All other text
+		} else {
+			$new_str .= chr(3).'00'.$_; # white
+		}
+		$new_str .= ' ';
+	}
+
+	return $new_str;
+}
 
 sub get_channels {
 	return Irssi::settings_get_str('twt_channels');
