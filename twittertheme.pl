@@ -2,14 +2,14 @@
 #
 # twittertheme.pl
 #
-# Colorizes Twitter channel components (configured for Bitlbee-style).
+# Colorizes Twitter message components (configured for Bitlbee-style).
 # Removes redundant long-format URLs.
 #
 # Note: Will remove existing color formatting on message part.
 #
 # Can be configured to colorize the following components:
 # * [alphanum]
-# * RT @usertag:
+# * RT
 # * @usertag
 # * #hashtag
 # * http(s)://url
@@ -127,7 +127,7 @@ Colors:
 
 Examples:
 
-  List all TwitterTheme settings:
+  List all Twitter Theme settings:
     /SET twt_
 
   Set the colorization theme for URLs:
@@ -147,7 +147,7 @@ sub cmd_help {
 
 Description:
 
-  TwitterTheme colorizes Twitter-like components in your public messages (channels). TwitterTheme 
+  Twitter Theme colorizes Twitter-like components in your public messages (channels). Twitter Theme 
   is configured for a Bitlbee-style tweets but should work with most other Irssi Twitter clients 
   or you can just enable it for normal IRC channels!
 
@@ -162,7 +162,7 @@ Known Issues:
 
 Usage/Options:
 
-  TwitterTheme works out of the box and does not need to be configured for first time use. 
+  Twitter Theme works out of the box and does not need to be configured for first time use. 
   However, you will most likely want to restrict the script to specific channels and set your 
   colors. All configuration is done through Irssi settings via the /SET or /TOGGLE commands.
 
@@ -174,7 +174,7 @@ Channel Config (default is all):
     
 Color Config:
     
-  With TwitterTheme, you can colorize up to six different message components as described below. 
+  With Twitter Theme, you can colorize up to six different message components as described below. 
   In the very least you must set the foreground aka text color, the background color is optional. 
   For a list of valid colors, see the 'Colors' section below.
 
@@ -216,7 +216,7 @@ Colors:
 
 Examples:
 
-  List all TwitterTheme settings:
+  List all Twitter Theme settings:
     /SET twt_
 
   Set list of channels to three specific channels:
@@ -332,7 +332,7 @@ sub is_long_URL {
 
 sub get_component_color {
 
-    # Returns array of color names (green magenta)
+    # Returns array of color names (eg. green magenta)
     my @colors
         = split( /\s+/, Irssi::settings_get_str( 'twt_color_' . $_[0] ) );
 
@@ -439,7 +439,7 @@ Irssi::signal_add_last( 'message public',     'sig_public' );
 Irssi::signal_add_last( 'message own_public', 'sig_own_public' );
 Irssi::signal_add_last( 'setup changed',      'sig_setup_changed' );
 
-# Settings w/ defaults (/set)
+# Settings w/ defaults (/SET)
 Irssi::settings_add_str( $IRSSI{'name'}, 'twt_channels',      'all' );
 Irssi::settings_add_str( $IRSSI{'name'}, 'twt_color_bitlbee', 'lgray' );
 Irssi::settings_add_str( $IRSSI{'name'}, 'twt_color_hash',    'yellow' );
