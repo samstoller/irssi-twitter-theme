@@ -20,6 +20,11 @@
 #
 # CHANGELOG
 #
+# v0.6a
+#  - Regex
+#     * Usertags can have . as first char
+#  - Features
+#     * Fixing broken is_long_url() result
 # v0.5a
 #  - Commands
 #     * Cleaned up command bindings for help
@@ -282,10 +287,10 @@ sub colorize {
         # Skip long URLs if setting enabled
         if ( not( has_remove_long_URLs() and is_long_URL($word) ) ) {
 
-            # Echo color
+            # Color code
             $pretty_msg .= get_component_color( detect_component($word) );
 
-            # Echo component
+            # Component
             $pretty_msg .= $word . chr(15) . ' ';    # TODO/FIXME whitespace
         }
     }
@@ -306,7 +311,7 @@ sub detect_component {
         $component = 'retweet';
 
     }
-    elsif ( $word =~ /^@.+/ ) {
+    elsif ( $word =~ /^\.?@.+/ ) {
         $component = 'user';
 
     }
@@ -322,7 +327,8 @@ sub detect_component {
 }
 
 sub is_long_URL {
-    return 1 if (/<\S+\.\S+>/);
+    my ($word) = @_;
+    return 1 if ( $word =~ /<\S+\.\S+>/ );
     return 0;
 }
 
@@ -348,7 +354,7 @@ sub get_channels {
 
 sub has_remove_long_URLs {
 
-    return Irssi::settings_get_str('twt_remove_long_urls');
+    return Irssi::settings_get_bool('twt_remove_long_urls');
 }
 
 sub is_all_chan {
@@ -401,7 +407,7 @@ sub validate_channels {
 }
 
 sub validate_colors {
-    foreach my $component qw(bitlbee hash http retweet text user) {
+    foreach my $component (qw(bitlbee hash http retweet text user)) {
 
         my $setting = '';
         my $to_validate
