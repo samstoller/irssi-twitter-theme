@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 #
-# twittertheme.pl
+# twitter_theme.pl
 #
 # Colorizes Twitter message components (configured for Bitlbee-style).
 # Removes redundant long-format URLs.
@@ -75,7 +75,7 @@ $VERSION = "0.4";
     description => "Assign colors to tweet message components",
     license     => "Public Domain",
     url         => "http://irssi.org/",
-    changed     => "2014-03-01"
+    changed     => "2014-10-22"
 );
 %COLORS = (
     white    => 0,
@@ -154,7 +154,7 @@ Description:
 
   Twitter Theme colorizes Twitter-like components in your public messages (channels). Twitter Theme 
   is configured for a Bitlbee-style tweets but should work with most other Irssi Twitter clients 
-  or you can just enable it for normal IRC channels!
+  or you can enable it for normal IRC channels!
 
 Known Issues:
   
