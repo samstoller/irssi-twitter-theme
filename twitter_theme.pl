@@ -112,41 +112,21 @@ sub cmd_twt {
 sub cmd_colors {
     Irssi::print(
         <<EOF
-
 Colors:
 
   Below is a list of colors that you can set your components to. The prefix of 'l' 
-  indicates a lighter version which is often an unbolded version of the base color.
+  indicates a lighter version which is often a bolded version of the base color.
 
   Please note that your terminal may display these colors differently than described.
-
-    white
-    black
-    gray     lgray
-    red      lred
-    green    lgreen
-    blue     lblue
-    magenta  lmagenta
-    cyan     lcyan
-    yellow   lyellow
-
-Examples:
-
-  List all Twitter Theme settings:
-    /SET twt_
-
-  Set the colorization theme for URLs:
-    /SET twt_color_http gray
-
-  Set the colorization theme for hashtags:
-    /SET twt_color_hash yellow lblue
-
 EOF
         , MSGLEVEL_CLIENTCRAP
     );
+
+    print_colors();
 }
 
 sub cmd_help {
+    Irssi::print( chr(3).sprintf( '%02d', $COLORS{'white'} ).','.sprintf( '%02d', $COLORS{'blue'}).'Twitter Theme', MSGLEVEL_CLIENTCRAP );
     Irssi::print(
         <<EOF
 
@@ -155,15 +135,6 @@ Description:
   Twitter Theme colorizes Twitter-like components in your public messages (channels). Twitter Theme 
   is configured for a Bitlbee-style tweets but should work with most other Irssi Twitter clients 
   or you can enable it for normal IRC channels!
-
-Known Issues:
-  
-  * Existing colors and formatting will be removed from the message part. Note that the message 
-    does not include nicks, so nick color will be preserved, however highlights will not.
-
-  * Channels of the same name across different servers cannot be individually configured. For 
-    example, setting your channel list to #twitter is server-agnostic and will colorize all 
-    #twitter channels regardless of which server you are connected to.
 
 Usage/Options:
 
@@ -191,7 +162,14 @@ Color Config:
   /SET twt_color_retweet  [<color>]  [<color>]    RT         - Bitlbee retweets
   /SET twt_color_text     [<color>]  [<color>]    'string'   - All text
   /SET twt_color_user     [<color>]  [<color>]    \@usertags  - Twitter usernames
+EOF
+        , MSGLEVEL_CLIENTCRAP
+    );
 
+    cmd_colors();
+
+    Irssi::print(
+    <<EOF
 Removing Long URLs:
     
   You can also toggle the removal of long URLs which are defined as any text that looks like a URL 
@@ -202,22 +180,14 @@ Removing Long URLs:
 
     /SET twt_remove_long_urls  [ON|OFF|TOGGLE]
 
-Colors:
+Known Issues:
+  
+  * Existing colors and formatting will be removed from the message part. Note that the message 
+    does not include nicks, so nick color will be preserved, however highlights will not.
 
-  Below is a list of colors that you can set your components to. The prefix of 'l' 
-  indicates a lighter version which is often an unbolded version of the base color.
-
-  Please note that your terminal may display these colors differently than described.
-
-    white
-    black
-    gray     lgray
-    red      lred
-    green    lgreen
-    blue     lblue
-    magenta  lmagenta
-    cyan     lcyan
-    yellow   lyellow
+  * Channels of the same name across different servers cannot be individually configured. For 
+    example, setting your channel list to #twitter is server-agnostic and will colorize all 
+    #twitter channels regardless of which server you are connected to.
 
 Examples:
 
@@ -273,7 +243,8 @@ sub sig_setup_changed {
 sub colorize {
     my ( $msg, $target ) = @_;
     my $pretty_msg = '';
-
+    my $previous = '';
+    
     # Is this channel set to be colorized?
     return $msg if ( !is_enabled_chan($target) );
 
@@ -287,11 +258,17 @@ sub colorize {
         # Skip long URLs if setting enabled
         if ( not( has_remove_long_URLs() and is_long_URL($word) ) ) {
 
-            # Color code
-            $pretty_msg .= get_component_color( detect_component($word) );
+            # Get the type of component first
+            my $component = detect_component($word);
+                        
+            # Reset colors for new components
+            if ($component ne $previous) {
+                $pretty_msg .= chr(15) . $pretty_msg ne '' ? ' ' : '' . get_component_color($component) . $word;
+            } else {
+                $pretty_msg .= $pretty_msg ne '' ? ' ' : '' . $word;            
+            }
 
-            # Component
-            $pretty_msg .= $word . chr(15) . ' ';    # TODO/FIXME whitespace
+            $previous = $component;
         }
     }
 
@@ -430,6 +407,40 @@ sub validate_colors {
 
         Irssi::settings_set_str( 'twt_color_' . $component, $setting );
     }
+}
+
+sub print_colors {
+    Irssi::print(
+        "Foreground:\n".
+        chr(3).sprintf( '%02d', $COLORS{'white'} ).','.sprintf( '%02d', $COLORS{'black'} ) . '  white      ' .
+        chr(3).sprintf( '%02d', $COLORS{'black'} ).','.sprintf( '%02d', $COLORS{'lgray'} ) . 'black' . "\n" .
+        chr(3).sprintf( '%02d', $COLORS{'gray'}) . '  gray       ' .
+        chr(3).sprintf( '%02d', $COLORS{'lgray'}) . 'lgray' . "\n" .
+        chr(3).sprintf( '%02d', $COLORS{'yellow'}) . '  yellow     ' .
+        chr(3).sprintf( '%02d', $COLORS{'lyellow'}) . 'lyellow' . "\n" .
+        chr(3).sprintf( '%02d', $COLORS{'green'}) . '  green      ' .
+        chr(3).sprintf( '%02d', $COLORS{'lgreen'}) . 'lgreen' . "\n" .
+        chr(3).sprintf( '%02d', $COLORS{'cyan'}) . '  cyan       ' .
+        chr(3).sprintf( '%02d', $COLORS{'lcyan'}) . 'lcyan' . "\n" .
+        chr(3).sprintf( '%02d', $COLORS{'blue'}) . '  blue       ' .
+        chr(3).sprintf( '%02d', $COLORS{'lblue'}) . 'lblue' . "\n" .
+        chr(3).sprintf( '%02d', $COLORS{'magenta'}) . '  magenta    ' .
+        chr(3).sprintf( '%02d', $COLORS{'lmagenta'}) . 'lmagenta' . "\n" .
+        chr(3).sprintf( '%02d', $COLORS{'red'}) . '  red        ' .
+        chr(3).sprintf( '%02d', $COLORS{'lred'}) . 'lred' . "\n",
+        MSGLEVEL_CLIENTCRAP
+    );
+    Irssi::print(
+        "Background:\n".
+        '  '.chr(3).sprintf( '%02d', $COLORS{'black'} ).','.sprintf( '%02d', $COLORS{'lgray'} ) . 'lgray' . "\n" .
+        '  '.chr(3).sprintf( '%02d', $COLORS{'black'} ).','.sprintf( '%02d', $COLORS{'yellow'} ) . 'yellow' . "\n" .
+        '  '.chr(3).sprintf( '%02d', $COLORS{'black'} ).','.sprintf( '%02d', $COLORS{'green'} ) . 'green' . "\n" .
+        '  '.chr(3).sprintf( '%02d', $COLORS{'black'} ).','.sprintf( '%02d', $COLORS{'cyan'} ) . 'cyan' . "\n" .
+        '  '.chr(3).sprintf( '%02d', $COLORS{'white'} ).','.sprintf( '%02d', $COLORS{'blue'} ) . 'blue' . "\n" .
+        '  '.chr(3).sprintf( '%02d', $COLORS{'white'} ).','.sprintf( '%02d', $COLORS{'magenta'} ) . 'magenta' . "\n" .
+        '  '.chr(3).sprintf( '%02d', $COLORS{'white'} ).','.sprintf( '%02d', $COLORS{'red'} ) . 'red' . "\n",
+        MSGLEVEL_CLIENTCRAP
+    );
 }
 
 ################
