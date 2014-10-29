@@ -258,21 +258,22 @@ sub colorize {
         # Skip long URLs if setting enabled
         if ( not( has_remove_long_URLs() and is_long_URL($word) ) ) {
 
-            # Get the type of component first
+            # Get the type of component and if it's the first component
             my $component = detect_component($word);
-                        
-            # Reset colors for new components
-            if ($component ne $previous) {
-                $pretty_msg .= chr(15) . $pretty_msg ne '' ? ' ' : '' . get_component_color($component) . $word;
+            my $msg_start = $pretty_msg eq '' ? 1 : 0;
+
+            # If this is part of the text message then don't reset colors
+            if ($component eq 'text' && $component eq $previous) {
+                $pretty_msg .= ($msg_start ? '' : ' ') . $word;
             } else {
-                $pretty_msg .= $pretty_msg ne '' ? ' ' : '' . $word;            
+                $pretty_msg .= chr(15) . ($msg_start ? '' : ' ') . get_component_color($component) . $word;
             }
 
             $previous = $component;
         }
     }
 
-    return $pretty_msg;
+    return $pretty_msg . chr(15);
 }
 
 sub detect_component {
