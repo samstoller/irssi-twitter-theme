@@ -59,7 +59,7 @@
 
 use strict;
 use warnings;
-use vars qw($VERSION %IRSSI %COLORS);
+use vars qw($VERSION %IRSSI %COLORS %COMPONENTS);
 use Irssi;
 
 #use Data::Dumper;
@@ -94,6 +94,14 @@ $VERSION = "0.4";
     lmagenta => 13,
     gray     => 14,
     lgray    => 15
+);
+%COMPONENTS = (
+    bitlbee  => 'lgray',
+    hash     => 'yellow',
+    http     => 'gray',
+    retweet  => 'black green',
+    text     => 'white',
+    user     => 'magenta'
 );
 
 #######################
@@ -399,7 +407,7 @@ sub validate_channels {
 }
 
 sub validate_colors {
-    foreach my $component (qw(bitlbee hash http retweet text user)) {
+    foreach my $component (keys %COMPONENTS) {
 
         my $setting = '';
         my $to_validate
@@ -471,12 +479,9 @@ Irssi::signal_add_last( 'message public',     'sig_public' );
 Irssi::signal_add_last( 'message own_public', 'sig_own_public' );
 Irssi::signal_add_last( 'setup changed',      'sig_setup_changed' );
 
-# Settings w/ defaults (/SET)
-Irssi::settings_add_str( $IRSSI{'name'}, 'twt_channels',      'all' );
-Irssi::settings_add_str( $IRSSI{'name'}, 'twt_color_bitlbee', 'lgray' );
-Irssi::settings_add_str( $IRSSI{'name'}, 'twt_color_hash',    'yellow' );
-Irssi::settings_add_str( $IRSSI{'name'}, 'twt_color_http',    'gray' );
-Irssi::settings_add_str( $IRSSI{'name'}, 'twt_color_retweet', 'green' );
-Irssi::settings_add_str( $IRSSI{'name'}, 'twt_color_text',    'white' );
-Irssi::settings_add_str( $IRSSI{'name'}, 'twt_color_user',    'magenta' );
-Irssi::settings_add_bool( $IRSSI{'name'}, 'twt_remove_long_urls', 1 );    # ON
+# Settings (init w/ defaults)
+while( my($k, $v) = each %COMPONENTS ) {
+    Irssi::settings_add_str( $IRSSI{'name'}, 'twt_color_' . $k, $v );
+}
+Irssi::settings_add_str( $IRSSI{'name'}, 'twt_channels', 'all' );
+Irssi::settings_add_bool( $IRSSI{'name'}, 'twt_remove_long_urls', 1 );
