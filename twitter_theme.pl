@@ -111,8 +111,9 @@ $VERSION = "0.4";
 sub cmd_twt {
     if ( $_[0] eq 'colors' ) {
         cmd_colors();
-    }
-    else {
+    } elsif ( $_[0] eq 'reset' ) {
+        cmd_reset();
+    } else {
         cmd_help();
     }
 }
@@ -214,6 +215,18 @@ Examples:
 EOF
         , MSGLEVEL_CLIENTCRAP
     );
+}
+
+sub cmd_reset {
+
+    # Component defaults are in the global space
+    while( my($k, $v) = each %COMPONENTS ) {
+        Irssi::settings_set_str( 'twt_color_' . $k, $v );
+    }
+    Irssi::settings_set_str( 'twt_channels', 'all' );
+    Irssi::settings_set_bool( 'twt_remove_long_urls', 1 );
+
+    Irssi::print('Twitter Theme settings reset.');
 }
 
 ######################
@@ -472,6 +485,7 @@ sub print_colors {
 
 # Bind (to commands)
 Irssi::command_bind( 'twt', \&cmd_twt, 'Twitter Theme' );
+Irssi::command_bind( 'twt reset', \&cmd_twt );
 Irssi::command_bind( 'twt colors', \&cmd_twt );
 
 # Bind (to signals)
