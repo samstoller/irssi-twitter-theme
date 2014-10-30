@@ -262,6 +262,9 @@ sub colorize {
             my $component = detect_component($word);
             my $msg_start = $pretty_msg eq '' ? 1 : 0;
 
+            # Modify word hook
+            $word = modify_word($word, $component);
+
             # If this is part of the text message then don't reset colors
             if ($component eq 'text' && $component eq $previous) {
                 $pretty_msg .= ($msg_start ? '' : ' ') . $word;
@@ -297,11 +300,22 @@ sub detect_component {
         $component = 'hash';
 
     }
-    elsif ( $word =~ /^https?:\/\// ) {
+    elsif ( $word =~ /^\(?https?:\/\// ) {
         $component = 'http';
     }
 
     return $component;
+}
+
+sub modify_word {
+    my ($word, $component) = @_;
+
+    # Remove leading open parens from URLs
+    if ( $component eq 'http' ) {
+        $word =~ s/^\(?(.*)$/$1/;
+    }
+
+    return $word;
 }
 
 sub is_long_URL {
