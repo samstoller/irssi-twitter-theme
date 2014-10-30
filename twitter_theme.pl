@@ -1,25 +1,23 @@
 #!/usr/bin/perl -w
 #
-# twitter_theme.pl
+# Twitter Theme (twitter_theme.pl)
 #
-# Colorizes Twitter message components (configured for Bitlbee-style).
-# Removes redundant long-format URLs.
+# Colorizes Twitter-like message components (configured for Bitlbee-style).
+# Removes redundant URLs.
 #
-# Note: Will remove existing color formatting on message part.
-#
-# Can be configured to colorize the following components:
-# * [alphanum]
-# * RT
-# * @usertag
-# * #hashtag
-# * http(s)://url
-# * 'plain text'
-#
-# Can be configured to remove URLs that:
-# * Appear inside brackets <...>
+# Note: Will remove existing color and formatting on message part.
 #
 # CHANGELOG
-#
+# v1.0 (Official Release)
+#  - Commands
+#    * Add reset colors command
+# v0.8a
+#  - URLs
+#    * Filter characters from URL removal
+# v0.7a
+#  - Colorization
+#     * Treat whitespace on message text
+#       as a single blob
 # v0.6a
 #  - Regex
 #     * Usertags can have . as first char
@@ -74,8 +72,8 @@ $VERSION = "0.4";
     name        => "Twitter Theme",
     description => "Assign colors to tweet message components",
     license     => "Public Domain",
-    url         => "http://irssi.org/",
-    changed     => "2014-10-22"
+    url         => "http://github.com/samstoller/irssi-twitter-theme",
+    changed     => "2014-11-10"
 );
 %COLORS = (
     white    => 0,
@@ -123,10 +121,12 @@ sub cmd_colors {
         <<EOF
 Colors:
 
-  Below is a list of colors that you can set your components to. The prefix of 'l' 
+  Below is a list of colors that you can set your components to. The prefix of 'l'
   indicates a lighter version which is often a bolded version of the base color.
 
-  Please note that your terminal may display these colors differently than described.
+  Only certain colors are available as background colors as shown below.
+
+  Note: your terminal may display these colors differently than described.
 EOF
         , MSGLEVEL_CLIENTCRAP
     );
@@ -141,38 +141,39 @@ sub cmd_help {
 
 Description:
 
-  Twitter Theme colorizes Twitter-like components in your public messages (channels). Twitter Theme 
-  is configured for a Bitlbee-style tweets but should work with most other Irssi Twitter clients 
-  or you can enable it for normal IRC channels!
+  Twitter Theme colorizes Twitter-like components in your public messages (channels) in order to 
+  enhance readability. Twitter Theme is configured for a Bitlbee-style tweets but should work with 
+  other Irssi Twitter clients. You can also use this script for regular IRC channels.
 
-Usage/Options:
+Usage:
 
-  Twitter Theme works out of the box and does not need to be configured for first time use. 
-  However, you will most likely want to restrict the script to specific channels and set your 
-  colors. All configuration is done through Irssi settings via the /SET or /TOGGLE commands.
+  Twitter Theme works out of the box and does not need to be configured for first time use.
+  However, you will most likely want to restrict the script to specific channels and define your
+  own color schemes for each component. All configuration is done through Irssi settings via
+  the /SET or /TOGGLE commands.
 
 Channel Config (default is all):
 
   Channel names must start with a #.
 
   /SET twt_channels [<chan1> <chan2> <chan3> ...] or [all]
-    
+
 Color Config:
-    
-  With Twitter Theme, you can colorize up to six different message components as described below. 
-  In the very least you must set the foreground aka text color, the background color is optional. 
+
+  With Twitter Theme, you can colorize up to six different message components as described below.
+  In the very least you must set the foreground (text) color, the background color is optional.
   For a list of valid colors, see the 'Colors' section below.
 
   Setting Name           Foreground  Background   Component
 
-  /SET twt_color_bitlbee  [<color>]  [<color>]    [0x->0x]   - Bitlbee tweet numbers
-  /SET twt_color_hash     [<color>]  [<color>]    #hashtags  - Twitter hashtags
-  /SET twt_color_http     [<color>]  [<color>]    http://    - Basic URLs
-  /SET twt_color_retweet  [<color>]  [<color>]    RT         - Bitlbee retweets
-  /SET twt_color_text     [<color>]  [<color>]    'string'   - All text
-  /SET twt_color_user     [<color>]  [<color>]    \@usertags  - Twitter usernames
+  /SET twt_color_bitlbee  [<color>]  [<color>]    [0x->0x]    - Bitlbee IDs
+  /SET twt_color_hash     [<color>]  [<color>]    #hashtags   - Hashtags
+  /SET twt_color_http     [<color>]  [<color>]    http(s)://  - URLs
+  /SET twt_color_retweet  [<color>]  [<color>]    RT          - Retweets
+  /SET twt_color_text     [<color>]  [<color>]    'string'    - Text
+  /SET twt_color_user     [<color>]  [<color>]    \@usertags  - Usernames
 EOF
-        , MSGLEVEL_CLIENTCRAP
+        , MSGLEVEL_CLIENTCRAP 
     );
 
     cmd_colors();
@@ -180,8 +181,8 @@ EOF
     Irssi::print(
     <<EOF
 Removing Long URLs:
-    
-  You can also toggle the removal of long URLs which are defined as any text that looks like a URL 
+
+  You can also toggle the removal of long URLs which are defined as any text that looks like a URL
   that is between two angle bracket characters such as:
 
       <https://myurl.com>
@@ -190,27 +191,38 @@ Removing Long URLs:
     /SET twt_remove_long_urls  [ON|OFF|TOGGLE]
 
 Known Issues:
-  
-  * Existing colors and formatting will be removed from the message part. Note that the message 
+
+  * Existing colors and formatting will be removed from the message part. Note that the message
     does not include nicks, so nick color will be preserved, however highlights will not.
 
-  * Channels of the same name across different servers cannot be individually configured. For 
-    example, setting your channel list to #twitter is server-agnostic and will colorize all 
+  * Channels of the same name across different servers cannot be individually configured. For
+    example, setting your channel list to #twitter is server-agnostic and will colorize all
     #twitter channels regardless of which server you are connected to.
 
 Examples:
 
-  List all Twitter Theme settings:
-    /SET twt_
+  /SET twt_
+        List all Twitter Theme settings
 
-  Set list of channels to three specific channels:
-    /SET twt_channels #perl #irssi #twitter
+  /SET twt_channels #perl #irssi #twitter
+        Set list of channels to three specific channels
 
-  Set the colorization theme for URLs:
-    /SET twt_color_http gray
+  /SET twt_color_http gray
+        Set the colorization theme for URLs
 
-  Set the colorization theme for hashtags:
-    /SET twt_color_hash yellow lblue
+  /SET twt_color_hash yellow lblue
+        Set the colorization theme for hashtags
+
+Commands:
+
+  /twt
+        This help text
+
+  /twt colors
+        Display available colors
+
+  /twt reset
+        Reset colors to the default theme
 
 EOF
         , MSGLEVEL_CLIENTCRAP
@@ -265,7 +277,7 @@ sub colorize {
     my ( $msg, $target ) = @_;
     my $pretty_msg = '';
     my $previous = '';
-    
+
     # Is this channel set to be colorized?
     return $msg if ( !is_enabled_chan($target) );
 
@@ -468,6 +480,7 @@ sub print_colors {
     );
     Irssi::print(
         "Background:\n".
+        '  '.chr(3).sprintf( '%02d', $COLORS{'white'} ).','.sprintf( '%02d', $COLORS{'black'} ) . 'black' . "\n" .
         '  '.chr(3).sprintf( '%02d', $COLORS{'black'} ).','.sprintf( '%02d', $COLORS{'lgray'} ) . 'lgray' . "\n" .
         '  '.chr(3).sprintf( '%02d', $COLORS{'black'} ).','.sprintf( '%02d', $COLORS{'yellow'} ) . 'yellow' . "\n" .
         '  '.chr(3).sprintf( '%02d', $COLORS{'black'} ).','.sprintf( '%02d', $COLORS{'green'} ) . 'green' . "\n" .
